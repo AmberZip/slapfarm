@@ -1,0 +1,226 @@
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- Config
+local TELEPORT_RADIUS = 500000000
+local Y_TOLERANCE = 10000000
+local TELEPORT_DELAY = 0
+local TARGET_POS = Vector3.new(-1010.16, 329.9, 399)
+
+-- GUI
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SlapFarmGui"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = PlayerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 180, 0, 100)
+frame.Position = UDim2.new(0, 10, 1, -110)
+frame.BackgroundColor3 = Color3.fromRGB(34, 34, 34)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = screenGui
+
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 25)
+header.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+header.Parent = frame
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 1, 0)
+title.BackgroundTransparency = 1
+title.Text = "Slap Farm"
+title.Font = Enum.Font.Sarpanch
+title.TextColor3 = Color3.new(1, 1, 1)
+title.TextSize = 20
+title.Parent = header
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(1, -20, 0, 40)
+toggleButton.Position = UDim2.new(0, 10, 0, 50)
+toggleButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+toggleButton.Text = "Slap Farm: OFF"
+toggleButton.TextColor3 = Color3.new(0, 0, 0)
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextSize = 20
+toggleButton.Parent = frame
+
+-- Helper Functions
+local function getHRP(player)
+	if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+		return player.Character.HumanoidRootPart
+	end
+	return nil
+end
+
+local function isSpectating(player)
+	local char = player.Character
+	local backpack = player:FindFirstChildOfClass("Backpack")
+
+	if char then
+		for _, item in ipairs(char:GetChildren()) do
+			if item:IsA("Tool") and item.Name == "Spectator" then
+				return true
+			end
+		end
+	end
+
+	if backpack then
+		for _, item in ipairs(backpack:GetChildren()) do
+			if item:IsA("Tool") and item.Name == "Spectator" then
+				return true
+			end
+		end
+	end
+
+	return false
+end
+
+local function walkToPosition(character, destination)
+	task.wait(2)
+	local hrp = character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		hrp.CFrame = CFrame.new(destination)
+	end
+end
+
+-- Slap Farm Logic
+local slapFarmEnabled = false
+local slapThread
+
+-- Protection Decal
+if not ReplicatedStorage:FindFirstChild("juisdfj0i32i0eidsuf0iok") then
+	local detection = Instance.new("Decal")
+	detection.Name = "juisdfj0i32i0eidsuf0iok"
+	detection.Parent = ReplicatedStorage
+end
+
+-- Main slap loop
+local function slapLoop()
+	local lastActivateTime = 0
+
+	while slapFarmEnabled do
+		local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+		local hrp = getHRP(LocalPlayer)
+		local tool = character:FindFirstChildOfClass("Tool")
+
+		if hrp and tool then
+			local myY = hrp.Position.Y
+
+			if myY > 167 then
+				local targetPlayer = nil
+				local closestDistance = math.huge
+
+				for _, otherPlayer in ipairs(Players:GetPlayers()) do
+					if otherPlayer ~= LocalPlayer and not isSpectating(otherPlayer) then
+						local otherHRP = getHRP(otherPlayer)
+						if otherHRP and otherHRP.Position.Y < myY then
+							local dist = (hrp.Position - otherHRP.Position).Magnitude
+							if dist < closestDistance then
+								closestDistance = dist
+								targetPlayer = otherPlayer
+							end
+						end
+					end
+				end
+
+				if targetPlayer then
+					local targetHRP = getHRP(targetPlayer)
+					if targetHRP then
+						hrp.CFrame = targetHRP.CFrame
+						task.wait(1)
+						continue
+					end
+				end
+			elseif myY < -20 then
+				local targetPlayer = nil
+				local closestDistance = math.huge
+
+				for _, otherPlayer in ipairs(Players:GetPlayers()) do
+					if otherPlayer ~= LocalPlayer and not isSpectating(otherPlayer) then
+						local otherHRP = getHRP(otherPlayer)
+						if otherHRP and otherHRP.Position.Y >= myY + 10 then
+							local dist = (hrp.Position - otherHRP.Position).Magnitude
+							if dist < closestDistance then
+								closestDistance = dist
+								targetPlayer = otherPlayer
+							end
+						end
+					end
+				end
+
+				if targetPlayer then
+					local targetHRP = getHRP(targetPlayer)
+					if targetHRP then
+						hrp.CFrame = targetHRP.CFrame
+						task.wait(1)
+						continue
+					end
+				end
+			end
+
+			if myY > 300 then
+				walkToPosition(character, TARGET_POS)
+				task.wait(1)
+				continue
+			end
+
+			local closestPlayer = nil
+			local closestDistance = math.huge
+
+			for _, otherPlayer in ipairs(Players:GetPlayers()) do
+				if otherPlayer ~= LocalPlayer and not isSpectating(otherPlayer) then
+					local otherHRP = getHRP(otherPlayer)
+					if otherHRP then
+						local yDiff = math.abs(hrp.Position.Y - otherHRP.Position.Y)
+						local distance = (hrp.Position - otherHRP.Position).Magnitude
+						if distance <= TELEPORT_RADIUS and yDiff <= Y_TOLERANCE and distance < closestDistance then
+							closestDistance = distance
+							closestPlayer = otherPlayer
+						end
+					end
+				end
+			end
+
+			if closestPlayer then
+				local targetHRP = getHRP(closestPlayer)
+				if targetHRP then
+					local offset = targetHRP.CFrame.LookVector * -2
+					hrp.CFrame = targetHRP.CFrame + offset
+
+					if os.clock() - lastActivateTime >= 1 then
+						tool:Activate()
+						lastActivateTime = os.clock()
+					end
+				end
+			end
+		end
+
+		task.wait(TELEPORT_DELAY)
+	end
+end
+
+-- Keep running on respawn
+LocalPlayer.CharacterAdded:Connect(function()
+	if slapFarmEnabled and (not slapThread or coroutine.status(slapThread) ~= "running") then
+		slapThread = coroutine.create(slapLoop)
+		coroutine.resume(slapThread)
+	end
+end)
+
+-- Toggle UI
+toggleButton.MouseButton1Click:Connect(function()
+	slapFarmEnabled = not slapFarmEnabled
+	toggleButton.Text = slapFarmEnabled and "Slap Farm: ON" or "Slap Farm: OFF"
+	toggleButton.BackgroundColor3 = slapFarmEnabled and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 255, 255)
+
+	if slapFarmEnabled then
+		slapThread = coroutine.create(slapLoop)
+		coroutine.resume(slapThread)
+	end
+end)
