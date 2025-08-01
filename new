@@ -134,7 +134,7 @@ local function slapLoop()
 					local targetHRP = getHRP(targetPlayer)
 					if targetHRP then
 						hrp.CFrame = targetHRP.CFrame
-						task.wait(1)
+						task.wait(1.25)
 						continue
 					end
 				end
