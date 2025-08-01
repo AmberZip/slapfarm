@@ -2,7 +2,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -198,18 +197,6 @@ local function slapLoop()
 					if os.clock() - lastActivateTime >= 1.85 then
 						tool:Activate()
 						lastActivateTime = os.clock()
-
-						-- === FLING ATTEMPT ===
-						task.spawn(function()
-							local flingStart = tick()
-							while tick() - flingStart < 1.5 do
-								if targetHRP and hrp then
-									hrp.Velocity = Vector3.new(9999, 9999, 9999)
-									hrp.CFrame = targetHRP.CFrame + Vector3.new(0, 2, 0)
-								end
-								RunService.Heartbeat:Wait()
-							end
-						end)
 					end
 				end
 			end
@@ -235,7 +222,7 @@ LocalPlayer.CharacterAdded:Connect(function(character)
 			goal.CFrame = CFrame.new(TARGET_POS)
 
 			local tweenInfo = TweenInfo.new(
-				2,
+				2, -- Duration
 				Enum.EasingStyle.Sine,
 				Enum.EasingDirection.Out
 			)
