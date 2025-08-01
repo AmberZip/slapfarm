@@ -194,7 +194,7 @@ local function slapLoop()
 					local offset = targetHRP.CFrame.LookVector * -2
 					hrp.CFrame = targetHRP.CFrame + offset
 
-					if os.clock() - lastActivateTime >= 0.62 then
+					if os.clock() - lastActivateTime >= 0.65 then
 						tool:Activate()
 						lastActivateTime = os.clock()
 					end
